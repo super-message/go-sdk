@@ -136,11 +136,12 @@ type NewMessage struct {
 }
 
 type Response struct {
-	Delete  *DeleteMessage `json:"delete,omitempty"`
-	Update  *UpdateMessage `json:"update,omitempty"`
-	New     *NewMessage    `json:"new,omitempty"`
-	Dismiss *Dismiss       `json:"dismiss,omitempty"`
-	Version int            `json:"version"`
+	Delete     *DeleteMessage `json:"delete,omitempty"`
+	UpdatePart *UpdatePart    `json:"updatePart,omitempty"`
+	Update     *UpdateMessage `json:"update,omitempty"`
+	New        *NewMessage    `json:"new,omitempty"`
+	Dismiss    *Dismiss       `json:"dismiss,omitempty"`
+	Version    int            `json:"version"`
 }
 
 func NewResponse() *Response {
@@ -155,6 +156,11 @@ func (m *Response) DeleteThisMessage(q *QueryParameter) *Response {
 		LocalID: q.MessageLocalID,
 	}
 
+	return m
+}
+
+func (m *Response) UpdatePartData(updatePart *UpdatePart) *Response {
+	m.UpdatePart = updatePart
 	return m
 }
 
@@ -179,23 +185,25 @@ func (m *Response) UpdateThisMessageWithTemplate(q *QueryParameter, templateID s
 	return m
 }
 
+const DismissDuration = 1500
+
 func (m *Response) ShowInfo(tip string) *Response {
-	m.ShowTip(Info, tip, 3000)
+	m.ShowTip(Info, tip, DismissDuration)
 	return m
 }
 
 func (m *Response) ShowSuccess(tip string) *Response {
-	m.ShowTip(Success, tip, 3000)
+	m.ShowTip(Success, tip, DismissDuration)
 	return m
 }
 
 func (m *Response) ShowWarning(tip string) *Response {
-	m.ShowTip(Warning, tip, 3000)
+	m.ShowTip(Warning, tip, DismissDuration)
 	return m
 }
 
 func (m *Response) ShowError(tip string) *Response {
-	m.ShowTip(Error, tip, 3000)
+	m.ShowTip(Error, tip, DismissDuration)
 	return m
 }
 
