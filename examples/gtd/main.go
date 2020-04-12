@@ -25,7 +25,7 @@ func main() {
 	router := mux.NewRouter()
 	router.Methods("GET").Path("/todos").HandlerFunc(TodoList)
 	router.Methods("POST").Path("/todo").HandlerFunc(AddTodo)
-	router.Methods("POST").Path("/todos").HandlerFunc(UpdateTodos)
+	router.Methods("GET").Path("/todo/done").HandlerFunc(TodoDone)
 	router.Use(authMiddleware)
 	http.Handle("/", router)
 
@@ -137,41 +137,25 @@ func AddTodo(w http.ResponseWriter, r *http.Request) {
 		Output(w)
 }
 
-func UpdateTodos(w http.ResponseWriter, r *http.Request) {
-	b, err := ioutil.ReadAll(r.Body)
+func TodoDone(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+	index, err := strconv.Atoi(query.Get("i"))
 	if err != nil {
-		log.Println("unable to read request data", err)
-		_ = go_sdk.ShowError(w, "读取请求数据失败")
+		go_sdk.ShowError(w, "参数错误")
 		return
 	}
-	defer r.Body.Close()
 
-	p := &struct {
-		List []string `json:"list"`
-	}{}
-	err = json.Unmarshal(b, p)
+	id, err := strconv.Atoi(query.Get("id"))
 	if err != nil {
-		log.Println("unable to parse request data", err)
-		_ = go_sdk.ShowError(w, "解析请求数据失败")
+		go_sdk.ShowError(w, "id 解析错误")
 		return
 	}
 
 	ctxval := getContextValue(r)
-	for _, todoID := range p.List {
-		id, err := strconv.Atoi(todoID)
-		if err != nil {
-			log.Println(err)
-		} else {
-			todoStore.DeleteTodo(id, ctxval.Member.OpenID)
-		}
-	}
+	todoStore.DeleteTodo(id, ctxval.Member.OpenID)
 
-	_ = go_sdk.NewResponse().UpdateThisMessage(
-		ctxval.QueryParameter,
-		"待办列表",
-		ResTodoList{
-			List: todoStore.ListTodo(ctxval.Member.OpenID),
-		}).
-		ShowSuccess("列表已更新"). // 如果不显示成功信息，直接调用 TodoList(w, r) 就行了
-		Output(w)
+	ops := go_sdk.NewOperations()
+	ops.AddStepRemove(go_sdk.NewRemove("list", []int{index}))
+
+	_ = go_sdk.NewResponse().UpdateData(ops).Output(w)
 }
