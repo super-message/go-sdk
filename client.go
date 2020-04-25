@@ -94,7 +94,6 @@ var (
 )
 
 func (c *Client) apiURL(path string) string {
-	fmt.Println(apiHost + c.pathPrefix + path)
 	return apiHost + c.pathPrefix + path
 }
 
@@ -122,7 +121,6 @@ func (c *Client) doRequest(req *http.Request, expected interface{}) error {
 		return err
 	}
 	_ = apiResponse.Body.Close()
-
 	if rs.Code != 0 {
 		return rs.APIError
 	}
@@ -164,7 +162,7 @@ func (c *Client) VerifyRequestToken(requestToken string) (m Member, err error) {
 	}
 
 	m = *expected
-	if m.OpenID != "" && m.ExpiredAt-10 > time.Now().Unix() {
+	if m.OpenID != "" && m.ExpiredAt-10 > time.Now().Unix() && c.cache != nil {
 		_ = c.cache.Set(requestToken, m)
 	}
 	return
