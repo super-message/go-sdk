@@ -26,6 +26,9 @@ func main() {
 	router.Methods("GET").Path("/todos").HandlerFunc(TodoList)
 	router.Methods("POST").Path("/todo").HandlerFunc(AddTodo)
 	router.Methods("GET").Path("/todo/done").HandlerFunc(TodoDone)
+	// 频道订阅和退订钩子
+	// 在用户订阅和退订时此钩子会被请求
+	router.Methods("GET").Path("/hook/subscribe").HandlerFunc(SubscribeHook)
 	router.Use(authMiddleware)
 	http.Handle("/", router)
 
@@ -154,8 +157,28 @@ func TodoDone(w http.ResponseWriter, r *http.Request) {
 	ctxval := getContextValue(r)
 	todoStore.DeleteTodo(id, ctxval.Member.OpenID)
 
-	ops := go_sdk.NewOperations()
-	ops.AddStepRemove(go_sdk.NewRemove("list", []int{index}))
+	ops := go_sdk.NewUpdatePart()
+	ops.AddOpRemove(go_sdk.NewRemove("list", []int{index}))
 
-	_ = go_sdk.NewResponse().UpdateData(ops).Output(w)
+	_ = go_sdk.NewResponse().UpdatePartData(ops).Output(w)
+}
+
+func SubscribeHook(w http.ResponseWriter, r *http.Request) {
+	ctxval := getContextValue(r)
+	log.Println(ctxval.Member, "action", r.URL.Query().Get("_a"))
+
+	action := r.URL.Query().Get("_a")
+	if action == "subscribe" {
+		// 订阅频道事件
+		// doSomething()
+	} else if action == "unsubscribe" {
+		// 退订频道事件
+		// doSomething()
+
+		// 如果缓存了 request token，记得删除此 token
+		client.Cache().Delete(r.URL.Query().Get("_rt"))
+	}
+
+	// 没有什么内容需要返回的，直接返回 204（2xx 都行）
+	w.WriteHeader(http.StatusNoContent)
 }
